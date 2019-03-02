@@ -2,6 +2,12 @@
 #include <iostream>
 #include <string>
 
+/*
+*
+*	Work in progress, not working so far
+*
+*/
+
 using namespace std;
 
 enum state { Out_Of_Poptarts, No_Credit, Has_Credit, Dispenses_Poptart };
