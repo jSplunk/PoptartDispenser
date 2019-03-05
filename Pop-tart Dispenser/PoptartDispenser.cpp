@@ -456,6 +456,7 @@ bool HasCredit::makeSelection(int option)
 		break;
 	}
 	
+	((Poptart_Dispenser*)(CurrentContext))->DispensedItem = product;
 	this->CurrentContext->setState(Dispenses_Poptart);
 	return true;
 }
@@ -485,7 +486,8 @@ bool DispensesPoptart::dispense()
 	}
 
 	if (money > cost)
-	{
+	{	
+		((Poptart_Dispenser*)(CurrentContext))->itemDispensed = true;
 		//cout << "Dispensing " << Poptart_Dispenser::DispensedItem->description << endl;
 		this->CurrentContext->setStateParam(Credit, money - cost);
 		return true;
