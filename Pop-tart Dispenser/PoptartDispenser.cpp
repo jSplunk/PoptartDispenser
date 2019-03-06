@@ -20,7 +20,7 @@ enum fillings
 	F_Maple = 2048, F_Marshmellow = 4096, F_Cheese = 8192,
 	F_CheeseAndHam = 16384, F_Caramel = 32768, F_Vanilla = 65536
 };
-
+#pragma region StateMachine-Declaration
 class StateContext;
 
 class State
@@ -79,7 +79,9 @@ public:
 		return this->stateParameters[SP];
 	}
 };
+#pragma endregion StateMachine-Declaration
 
+#pragma region Transition-Declaration
 class Transition
 {
 public:
@@ -94,7 +96,9 @@ public:
 	virtual bool dispense(void) { cout << "Error!" << endl; return false; }
 
 };
+#pragma endregion Transition-Declaration
 
+#pragma region Product-Declaration
 class Product
 {
 protected:
@@ -113,6 +117,9 @@ public:
 	}
 };
 
+#pragma endregion Product-Declaration
+
+#pragma region Base-Declaration
 class Base : public Product
 {
 public:
@@ -126,22 +133,10 @@ public:
 	void consume();
 	Product* ReturnHighestCostItem(void) { return nullptr; }
 };
+#pragma endregion Base-Declaration
 
-int Base::cost(void)
-{
-	return this->itemCost;
-}
 
-string Base::description(void)
-{
-	return this->product_description;
-}
-
-void Base::consume()
-{
-	cout << "Consuming " << product_description << "filled with: " << endl;
-}
-
+#pragma region Filling-Declaration
 class Filling : public Product
 {
 protected:
@@ -158,27 +153,9 @@ public:
 	void consume();
 	Product* ReturnHighestCostItem(void) {return nullptr;}
 };
+#pragma endregion Base-Declaration
 
-void Filling::fillProduct(Product* NewBase)
-{
-	base = NewBase;
-}
-
-int Filling::cost(void)
-{
-	return itemCost + base->cost();
-}
-
-string Filling::description(void)
-{
-	return this->product_description;
-}
-
-void Filling::consume()
-{
-	cout << base->description() + ", " + this->product_description;
-}
-
+#pragma region PoptartStates-Declaration
 class PoptartState : public State, public Transition
 {
 public:
@@ -194,20 +171,6 @@ public:
 	bool addPoptart(int);
 };
 
-bool OutOfPoptarts::moneyRejected(void)
-{
-	cout << "Ejecting!" << endl;
-	this->CurrentContext->setState(Out_Of_Poptarts);
-	return true;
-}
-
-bool OutOfPoptarts::addPoptart(int number)
-{
-	this->CurrentContext->setStateParam(No_Of_Poptarts, number);
-	this->CurrentContext->setState(No_Credit);
-	return true;
-}
-
 class NoCredit : public PoptartState
 {
 public:
@@ -215,17 +178,6 @@ public:
 	{}
 	bool insertMoney(int);
 };
-
-bool NoCredit::insertMoney(int money)
-{
-	cout << "You inserted: " << money << endl;
-	this->CurrentContext->setStateParam(Credit, money);
-	cout << " Total: " << money << endl;
-	this->CurrentContext->setState(Has_Credit);
-	return true;
-}
-
-
 
 class HasCredit : public PoptartState
 {
@@ -239,22 +191,6 @@ public:
 	bool insertMoney(int);
 };
 
-
-bool HasCredit::moneyRejected()
-{
-	this->CurrentContext->setState(Has_Credit);
-	return true;
-}
-
-bool HasCredit::insertMoney(int money)
-{
-	cout << "You inserted: " << money << endl;
-	int oldMoney = this->CurrentContext->getStateParam(Credit);
-	this->CurrentContext->setStateParam(Credit, oldMoney + money);
-	cout << " Total: " << oldMoney + money << endl;
-	return true;
-}
-
 class DispensesPoptart : public PoptartState
 {
 protected:
@@ -264,8 +200,10 @@ public:
 	{}
 	bool dispense(void);
 };
+#pragma endregion PoptartStates-Declaration
 
 
+#pragma region PoptartDispenser-Declaration
 class Poptart_Dispenser : public StateContext, public Transition
 {
 	friend class DispensesPoptart;
@@ -297,8 +235,206 @@ public:
 
 	virtual int getStateParam(stateParameter SP);
 };
+#pragma endregion PoptartDispenser-Declaration
+
+#pragma region Base-Implementation
+int Base::cost(void)
+{
+	return this->itemCost;
+}
+
+string Base::description(void)
+{
+	return this->product_description;
+}
+
+void Base::consume()
+{
+	cout << "Consuming " << product_description << "filled with: " << endl;
+}
+#pragma endregion Base-Implementation
+
+#pragma region Filling-Implementation
+void Filling::fillProduct(Product* NewBase)
+{
+	base = NewBase;
+}
+
+int Filling::cost(void)
+{
+	return itemCost + base->cost();
+}
+
+string Filling::description(void)
+{
+	return this->product_description;
+}
+
+void Filling::consume()
+{
+	cout << base->description() + ", " + this->product_description;
+}
+#pragma endregion Filling-Implementation
 
 
+#pragma region PoptartStates-Implementation
+bool OutOfPoptarts::moneyRejected(void)
+{
+	cout << "Ejecting!" << endl;
+	this->CurrentContext->setState(Out_Of_Poptarts);
+	return true;
+}
+
+bool OutOfPoptarts::addPoptart(int number)
+{
+	this->CurrentContext->setStateParam(No_Of_Poptarts, number);
+	this->CurrentContext->setState(No_Credit);
+	return true;
+}
+
+bool NoCredit::insertMoney(int money)
+{
+	cout << "You inserted: " << money << endl;
+	this->CurrentContext->setStateParam(Credit, money);
+	cout << " Total: " << money << endl;
+	this->CurrentContext->setState(Has_Credit);
+	return true;
+}
+
+bool HasCredit::moneyRejected()
+{
+	this->CurrentContext->setState(Has_Credit);
+	return true;
+}
+
+bool HasCredit::insertMoney(int money)
+{
+	cout << "You inserted: " << money << endl;
+	int oldMoney = this->CurrentContext->getStateParam(Credit);
+	this->CurrentContext->setStateParam(Credit, oldMoney + money);
+	cout << " Total: " << oldMoney + money << endl;
+	return true;
+}
+
+bool HasCredit::makeSelection(int option)
+{
+	switch (option)
+	{
+		case Plain:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, 100);
+			product = new Base("Plain", this->CurrentContext->getStateParam(Cost_Of_Poptart));
+			break;
+		case Spicy:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, 150);
+			product = new Base("Spicy", this->CurrentContext->getStateParam(Cost_Of_Poptart));
+			break;
+		case Chocolate:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, 200);
+			product = new Base("Chocolate", this->CurrentContext->getStateParam(Cost_Of_Poptart));
+			break;
+		case Coconut:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, 200);
+			product = new Base("Coconut", this->CurrentContext->getStateParam(Cost_Of_Poptart));
+			break;
+		case Fruity:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, 200);
+			product = new Base("Fruity", this->CurrentContext->getStateParam(Cost_Of_Poptart));
+			break;
+		
+	}
+	
+	if (product == nullptr)
+	{
+		cout << "No base with option code: " << option << endl;
+		return false;
+	}
+	
+	int baseCost = product->cost();
+	
+	switch (option)
+	{
+		case F_Chocolate:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 20);
+			product = new Filling("Chocolate", 20);
+		case F_Banana:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 50);
+			product = new Filling("Banana", 50);
+		case F_Strawberry:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 50);
+			product = new Filling("Strawberry", 50);
+		case F_Raspberry:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 50);
+			product = new Filling("Raspberry", 50);
+		case F_Apple:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 50);
+			product = new Filling("Apple", 50);
+		case F_Blackberry:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 50);
+			product = new Filling("Blackberry", 50);
+		case F_Maple:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 100);
+			product = new Filling("Maple", 100);
+		case F_Marshmellow:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 20);
+			product = new Filling("Marshmellow", 20);
+		case F_Cheese:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 70);
+			product = new Filling("Cheese", 70);
+		case F_CheeseAndHam:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 100);
+			product = new Filling("Cheese and ham", 100);
+		case F_Caramel:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 20);
+			product = new Filling("Caramel", 20);
+		case F_Vanilla:
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 50);
+			product = new Filling("Vanilla", 50);
+		default:
+			cout << "No filling with option code: " << option << endl;
+			return false;
+	}
+	
+	((Poptart_Dispenser*)(CurrentContext))->DispensedItem = product;
+	this->CurrentContext->setState(Dispenses_Poptart);
+	return true;
+}
+
+bool DispensesPoptart::dispense()
+{
+	int money = this->CurrentContext->getStateParam(Credit);
+	int numberOfPoptarts = this->CurrentContext->getStateParam(No_Of_Poptarts);
+	int cost = product->cost();
+
+	if (numberOfPoptarts > 0 && money > 0)
+	{
+		this->CurrentContext->setState(Has_Credit);
+		return false;
+	}
+	else if (numberOfPoptarts > 0 && money == 0)
+	{
+		this->CurrentContext->setStateParam(Credit, 0);
+		this->CurrentContext->setState(No_Credit);
+		return false;
+	}
+	else if (numberOfPoptarts == 0)
+	{
+		this->CurrentContext->setStateParam(No_Of_Poptarts, 0);
+		this->CurrentContext->setState(Out_Of_Poptarts);
+		return false;
+	}
+
+	if (money > cost)
+	{	
+		((Poptart_Dispenser*)(CurrentContext))->itemDispensed = true;
+		//cout << "Dispensing " << Poptart_Dispenser::DispensedItem->description << endl;
+		this->CurrentContext->setStateParam(Credit, money - cost);
+		return true;
+	}
+}
+
+#pragma endregion PoptartStates-Implementation
+
+#pragma region PoptartDispenser-Implementation
 Poptart_Dispenser::Poptart_Dispenser(int inventory_count)
 {
 	this->availableStates.push_back(new OutOfPoptarts(this));
@@ -378,121 +514,10 @@ int Poptart_Dispenser::getStateParam(stateParameter SP)
 {
 	return this->stateParameters[SP];
 }
+#pragma region PoptartDispenser-Implementation
 
-bool HasCredit::makeSelection(int option)
-{
-	if (product != nullptr)
-	{
-		delete product;
-	}
-	switch (option)
-	{
-		case Plain:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, 100);
-			product = new Base("Plain", this->CurrentContext->getStateParam(Cost_Of_Poptart));
-			break;
-		case Spicy:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, 150);
-			product = new Base("Spicy", this->CurrentContext->getStateParam(Cost_Of_Poptart));
-			break;
-		case Chocolate:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, 200);
-			product = new Base("Chocolate", this->CurrentContext->getStateParam(Cost_Of_Poptart));
-			break;
-		case Coconut:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, 200);
-			product = new Base("Coconut", this->CurrentContext->getStateParam(Cost_Of_Poptart));
-			break;
-		case Fruity:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, 200);
-			product = new Base("Fruity", this->CurrentContext->getStateParam(Cost_Of_Poptart));
-			break;
-		default:
-			cout << "No base with option code: " << option << endl;
-			product = nullptr;
-			return false;
-	}
-	int baseCost = product->cost();
-	
-	switch (option)
-	{
-		case F_Chocolate:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 20);
-			product = new Filling("Chocolate", 20);
-		case F_Banana:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 50);
-			product = new Filling("Banana", 50);
-		case F_Strawberry:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 50);
-			product = new Filling("Strawberry", 50);
-		case F_Raspberry:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 50);
-			product = new Filling("Raspberry", 50);
-		case F_Apple:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 50);
-			product = new Filling("Apple", 50);
-		case F_Blackberry:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 50);
-			product = new Filling("Blackberry", 50);
-		case F_Maple:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 100);
-			product = new Filling("Maple", 100);
-		case F_Marshmellow:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 20);
-			product = new Filling("Marshmellow", 20);
-		case F_Cheese:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 70);
-			product = new Filling("Cheese", 70);
-		case F_CheeseAndHam:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 100);
-			product = new Filling("Cheese and ham", 100);
-		case F_Caramel:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 20);
-			product = new Filling("Caramel", 20);
-		case F_Vanilla:
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, baseCost + 50);
-			product = new Filling("Vanilla", 50);
-	default:
-		break;
-	}
-	
-	((Poptart_Dispenser*)(CurrentContext))->DispensedItem = product;
-	this->CurrentContext->setState(Dispenses_Poptart);
-	return true;
-}
 
-bool DispensesPoptart::dispense()
-{
-	int money = this->CurrentContext->getStateParam(Credit);
-	int numberOfPoptarts = this->CurrentContext->getStateParam(No_Of_Poptarts);
-	int cost = product->cost();
 
-	if (numberOfPoptarts > 0 && money > 0)
-	{
-		this->CurrentContext->setState(Has_Credit);
-		return false;
-	}
-	else if (numberOfPoptarts > 0 && money == 0)
-	{
-		this->CurrentContext->setStateParam(Credit, 0);
-		this->CurrentContext->setState(No_Credit);
-		return false;
-	}
-	else if (numberOfPoptarts == 0)
-	{
-		this->CurrentContext->setStateParam(No_Of_Poptarts, 0);
-		this->CurrentContext->setState(Out_Of_Poptarts);
-		return false;
-	}
-
-	if (money > cost)
-	{	
-		((Poptart_Dispenser*)(CurrentContext))->itemDispensed = true;
-		//cout << "Dispensing " << Poptart_Dispenser::DispensedItem->description << endl;
-		this->CurrentContext->setStateParam(Credit, money - cost);
-		return true;
-	}
-}
 
 void main()
 {
