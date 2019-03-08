@@ -14,11 +14,11 @@ using namespace std;
 
 enum state { Out_Of_Poptarts, No_Credit, Has_Credit, Dispenses_Poptart };
 enum stateParameter { No_Of_Poptarts, Credit, Cost_Of_Poptart };
-enum bases {Plain = 1, Spicy = 2, Chocolate = 4, Coconut = 8, Fruity = 16};
-enum fillings 
+enum bases { Plain = 1, Spicy = 2, Chocolate = 4, Coconut = 8, Fruity = 16 };
+enum fillings
 {
-	F_Chocolate = 32, F_Banana = 64, F_Strawberry = 128, 
-	F_Raspberry = 256, F_Apple = 512, F_Blackberry = 1024, 
+	F_Chocolate = 32, F_Banana = 64, F_Strawberry = 128,
+	F_Raspberry = 256, F_Apple = 512, F_Blackberry = 1024,
 	F_Maple = 2048, F_Marshmellow = 4096, F_Cheese = 8192,
 	F_CheeseAndHam = 16384, F_Caramel = 32768, F_Vanilla = 65536
 };
@@ -142,7 +142,7 @@ public:
 	void consume();
 	Product* ReturnHighestCostItem(void)
 	{
-		return this; 
+		return this;
 	}
 };
 
@@ -211,7 +211,7 @@ public:
 	virtual int cost(void);
 	virtual string description(void);
 	void consume();
-	Product* ReturnHighestCostItem(void) 
+	Product* ReturnHighestCostItem(void)
 	{
 		return this->itemCost > base->ReturnHighestCostItem()->cost() ? this : base->ReturnHighestCostItem();
 	}
@@ -509,36 +509,39 @@ bool HasCredit::insertMoney(int money)
 bool HasCredit::makeSelection(int option)
 {
 
-	int baseOption = option;
+	unsigned int baseOption = option;
 
-	while (baseOption > Fruity)
-		baseOption -= Fruity;
+	baseOption = Plain | Spicy | Chocolate | Coconut | Fruity | F_Chocolate
+		| F_Banana | F_Strawberry | F_Raspberry | F_Apple | F_Blackberry | F_Maple
+		| F_Marshmellow | F_Cheese | F_CheeseAndHam | F_Caramel | F_Vanilla;
 
-	if (Plain % baseOption == 0)
+	baseOption |= option;
+
+	if ((option & Plain) == Plain)
 	{
 		product = new PlainBase();
 		this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
 		option -= Plain;
 	}
-	else if (Spicy % baseOption == 0)
+	else if ((option & Spicy) == Spicy)
 	{
 		product = new SpicyBase();
 		this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
 		option -= Spicy;
 	}
-	else if (Chocolate % baseOption == 0)
+	else if ((option & Chocolate) == Chocolate)
 	{
 		product = new ChocolateBase();
 		this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
 		option -= Chocolate;
 	}
-	else if (Coconut % baseOption == 0)
+	else if ((option & Coconut) == Coconut)
 	{
 		product = new CoconutBase();
 		this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
 		option -= Coconut;
 	}
-	else if (Fruity % baseOption == 0)
+	else if ((option & Fruity) == Fruity)
 	{
 		product = new FruityBase();
 		this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
@@ -549,231 +552,119 @@ bool HasCredit::makeSelection(int option)
 		cout << "You can't have multiple bases!" << endl;
 		return false;
 	}
-		/*switch (option)
-		{
-		case Plain == 0:
-			product = new PlainBase();
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case Spicy:
-			product = new SpicyBase();
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case Chocolate:
-			product = new ChocolateBase();
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case Coconut:
-			product = new CoconutBase();
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case Fruity:
-			product = new FruityBase();
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		default:
-			cout << "No base with option code: " << option << endl;
-			return false;
 
-		}*/
+	cout << "Selected " << ((Base*)(product))->description() << endl;
 
-		cout << "Selected " << ((Base*)(product))->description() << endl;
-
-	baseOption = option;
-	
-	while (option > Fruity)
+	while (option)
 	{
-
-		int baseCost = product->cost();
-
-		if (F_Chocolate % option == 0)
+		if ((option & F_Chocolate) == F_Chocolate)
 		{
 			fill = new ChocolateFilling();
 			fill->fillProduct(product);
 			product = fill;
 			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			baseOption -= F_Chocolate;
-			option = baseOption + F_Chocolate;
+			baseOption &= ~option;
+			option -= F_Chocolate;
 		}
-		else if (F_Banana % option == 0)
+		else if ((option & F_Banana) == F_Banana)
 		{
 			fill = new BananaFilling();
 			fill->fillProduct(product);
 			product = fill;
 			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			baseOption -= F_Banana;
-			option = baseOption + F_Chocolate;
+			baseOption &= ~option;
+			option -= F_Banana;
 		}
-		else if (F_Strawberry % option == 0)
+		else if ((option & F_Strawberry) == F_Strawberry)
 		{
 			fill = new StrawberryFilling();
 			fill->fillProduct(product);
 			product = fill;
 			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			baseOption -= F_Strawberry;
-			option = baseOption + F_Chocolate;
+			baseOption &= ~option;
+			option -= F_Strawberry;
 		}
-		else if (F_Raspberry % option == 0)
+		else if ((option & F_Raspberry) == F_Raspberry)
 		{
-			fill = new BlackberryFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			baseOption -= F_Raspberry;
-			option = baseOption + F_Chocolate;
-		}
-		else if (F_Apple % option == 0)
-		{
-			fill = new AppleFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			baseOption -= F_Apple;
-			option = baseOption + F_Chocolate;
-		}
-		else if (F_Blackberry % option == 0)
-		{
-			fill = new BlackberryFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			baseOption -= F_Blackberry;
-			option = baseOption + F_Chocolate;
-		}
-		else if (F_Maple % option == 0)
-		{
-			fill = new MapleFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			baseOption -= F_Maple;
-			option = baseOption+F_Chocolate;
-		}
-		else if (F_Marshmellow % option == 0)
-		{
-			fill = new MarshmellowFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			baseOption -= F_Marshmellow;
-			option = baseOption + F_Chocolate;
-		}
-		else if (F_Cheese % option == 0)
-		{
-			fill = new CheeseFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			baseOption -= F_Cheese;
-			option = baseOption + F_Chocolate;
-		}
-		else if (F_CheeseAndHam % option == 0)
-		{
-			fill = new CheeseAndHamFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			baseOption -= F_CheeseAndHam;
-			option = baseOption + F_Chocolate;
-		}
-		else if (F_Caramel % option == 0)
-		{
-			fill = new CaramelFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			baseOption -= F_Caramel;
-			option = baseOption + F_Chocolate;
-		}
-		else if (F_Vanilla % option == 0)
-		{
-			fill = new VanillaFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			baseOption -= F_Vanilla;
-			option = baseOption + F_Chocolate;
-		}
-
-		/*switch (option)
-		{
-		case F_Chocolate:
-			fill = new ChocolateFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case F_Banana:
-			fill = new BananaFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case F_Strawberry:
-			fill = new StrawberryFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case F_Raspberry:
 			fill = new RaspberryFilling();
 			fill->fillProduct(product);
 			product = fill;
 			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case F_Apple:
+			baseOption &= ~option;
+			option -= F_Raspberry;
+		}
+		else if ((option & F_Apple) == F_Apple)
+		{
 			fill = new AppleFilling();
 			fill->fillProduct(product);
 			product = fill;
 			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case F_Blackberry:
+			baseOption &= ~option;
+			option -= F_Apple;
+		}
+		else if ((option & F_Blackberry) == F_Blackberry)
+		{
 			fill = new BlackberryFilling();
 			fill->fillProduct(product);
 			product = fill;
 			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case F_Maple:
+			baseOption &= ~option;
+			option -= F_Blackberry;
+		}
+		else if ((option & F_Maple) == F_Maple)
+		{
 			fill = new MapleFilling();
 			fill->fillProduct(product);
 			product = fill;
 			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case F_Marshmellow:
+			baseOption &= ~option;
+			option -= F_Maple;
+		}
+		else if ((option & F_Marshmellow) == F_Marshmellow)
+		{
 			fill = new MarshmellowFilling();
 			fill->fillProduct(product);
 			product = fill;
 			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case F_Cheese:
+			baseOption &= ~option;
+			option -= F_Marshmellow;
+		}
+		else if ((option & F_Cheese) == F_Cheese)
+		{
 			fill = new CheeseFilling();
 			fill->fillProduct(product);
 			product = fill;
 			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case F_CheeseAndHam:
+			baseOption &= ~option;
+			option -= F_Cheese;
+		}
+		else if ((option & F_CheeseAndHam) == F_CheeseAndHam)
+		{
 			fill = new CheeseAndHamFilling();
 			fill->fillProduct(product);
 			product = fill;
 			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case F_Caramel:
+			baseOption &= ~option;
+			option -= F_CheeseAndHam;
+		}
+		else if ((option & F_Caramel) == F_Caramel)
+		{
 			fill = new CaramelFilling();
 			fill->fillProduct(product);
 			product = fill;
 			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		case F_Vanilla:
+			baseOption &= ~option;
+			option -= F_Caramel;
+		}
+		else if ((option & F_Vanilla) == F_Vanilla)
+		{
 			fill = new VanillaFilling();
 			fill->fillProduct(product);
 			product = fill;
 			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
-			break;
-		default:
-			cout << "No filling with option code: " << option << endl;
-			return false;
-		}*/
-		if(option > 0) option -= F_Chocolate;
+			baseOption &= ~option;
+			option -= F_Vanilla;
+		}
 	}
 	if (fill != nullptr) cout << "Selected " << ((Filling*)(product))->description() << endl;
 	((Poptart_Dispenser*)(CurrentContext))->DispensedItem = product;
@@ -789,15 +680,12 @@ bool DispensesPoptart::dispense()
 
 	if (numberOfPoptarts > 0 && money > 0)
 	{
-		if (money > cost)
-		{
-			((Poptart_Dispenser*)(CurrentContext))->itemDispensed = true;
-			cout << "Dispensing " << (((Poptart_Dispenser*)(CurrentContext))->DispensedItem)->description() << endl;
-			this->CurrentContext->setStateParam(Credit, money - cost);
-			this->CurrentContext->setStateParam(No_Of_Poptarts, numberOfPoptarts - 1);
-			this->CurrentContext->setState(Has_Credit);
-			return true;
-		}
+		((Poptart_Dispenser*)(CurrentContext))->itemDispensed = true;
+		cout << "Dispensing " << (((Poptart_Dispenser*)(CurrentContext))->DispensedItem)->description() << endl;
+		this->CurrentContext->setStateParam(Credit, money - cost);
+		this->CurrentContext->setStateParam(No_Of_Poptarts, numberOfPoptarts - 1);
+		this->CurrentContext->setState(Has_Credit);
+		return true;
 	}
 	else if (numberOfPoptarts > 0 && money == 0)
 	{
@@ -907,7 +795,7 @@ void main()
 	pop.insertMoney(200);
 
 
-	pop.makeSelection(Spicy+F_Vanilla+F_Vanilla+F_Vanilla);
+	pop.makeSelection(F_Chocolate + F_Cheese + F_Apple + F_Banana + Fruity);
 
 	pop.dispense();
 
