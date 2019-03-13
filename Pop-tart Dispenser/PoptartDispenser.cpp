@@ -113,7 +113,7 @@ protected:
 public:
 	virtual void consume(void)
 	{
-
+		
 	}
 
 	//Polymorphic getters for the product's attributes
@@ -452,6 +452,7 @@ string Base::description(void)
 void Base::consume()
 {
 	cout << "Consuming " << description() << endl;
+	delete this;
 }
 #pragma endregion Base-Implementation
 
@@ -476,6 +477,7 @@ string Filling::description(void)
 void Filling::consume()
 {
 	cout << "Consuming " << description() << endl;
+	delete this;
 }
 #pragma endregion Filling-Implementation
 
