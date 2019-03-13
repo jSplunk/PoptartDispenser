@@ -479,8 +479,12 @@ void Filling::consume()
 }
 #pragma endregion Filling-Implementation
 
-
-//The out of poptart state class implementation for money rejected, adding poptarts and inserting money
+/*
+*
+*	The out of poptart state class implementation for money rejected, adding poptarts and inserting money
+*	Using the stateparameters we can set the state of the money, and also add the money to a state.
+*
+*/
 #pragma region PoptartStates-Implementation
 bool OutOfPoptarts::moneyRejected(void)
 {
@@ -516,22 +520,29 @@ bool HasCredit::insertMoney(int money)
 {
 	cout << "You inserted: " << money << endl;
 	int oldMoney = this->CurrentContext->getStateParam(Credit);
-	this->CurrentContext->setStateParam(Credit, oldMoney + money);
+	this->CurrentContext->setStateParam(Credit, oldMoney + money); //Inserting money given plus the previous amount that that was put in
 	cout << " Total: " << oldMoney + money << endl;
 	return true;
 }
 
 bool HasCredit::makeSelection(int option)
 {
-
+	//Utilizing bitmasking to choose which option to pick
 	unsigned int baseOption = option;
-
+	
+	//Adding all the options into a bitmask
 	baseOption = Plain | Spicy | Chocolate | Coconut | Fruity | F_Chocolate
 		| F_Banana | F_Strawberry | F_Raspberry | F_Apple | F_Blackberry | F_Maple
 		| F_Marshmellow | F_Cheese | F_CheeseAndHam | F_Caramel | F_Vanilla;
-
+	
+	//Checking if the option given is contained in the bitmask
 	baseOption |= option;
-
+	
+	/*
+	*	Removing the option code of the item selected is needed for the code to not loop when selecting 
+	*	multiple fillings.
+	*/
+	
 	if ((option & Plain) == Plain)
 	{
 		product = new PlainBase();
@@ -569,7 +580,8 @@ bool HasCredit::makeSelection(int option)
 	}
 
 	cout << "Selected " << ((Base*)(product))->description() << endl;
-
+	
+	//Using a temporary product to act as a Filling, to call fillProduct on the product
 	Product* tmpFill = nullptr;
 
 	while (option)
@@ -649,38 +661,63 @@ bool HasCredit::makeSelection(int option)
 
 		if (tmpFill != nullptr)
 		{
+			//For every filling we specify, we keep adding it onto the product
 			((Filling*)(tmpFill))->fillProduct(product);
 			product = tmpFill;
 			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
 		}
 	}
 	if (product != nullptr) cout << "Selected " << ((Filling*)(product))->description() << endl;
+	
+	//At the end we set the item we are dispensing to the product selected
 	((Poptart_Dispenser*)(CurrentContext))->DispensedItem = product;
 	this->CurrentContext->setState(Dispenses_Poptart);
 	return true;
 }
-
+//Dispensing the product to the buyer, depening on certain conditions
 bool DispensesPoptart::dispense()
 {
 	int money = this->CurrentContext->getStateParam(Credit);
 	int numberOfPoptarts = this->CurrentContext->getStateParam(No_Of_Poptarts);
 	int cost = ((Poptart_Dispenser*)(CurrentContext))->DispensedItem->cost();
-
+	
+	//If there is poptarts in the dispenser and money inserted, we can dispense the product
 	if (numberOfPoptarts > 0 && money > 0)
 	{
-		((Poptart_Dispenser*)(CurrentContext))->itemDispensed = true;
-		cout << "Dispensing " << (((Poptart_Dispenser*)(CurrentContext))->DispensedItem)->description() << endl;
-		this->CurrentContext->setStateParam(Credit, money - cost);
-		this->CurrentContext->setStateParam(No_Of_Poptarts, numberOfPoptarts - 1);
-		this->CurrentContext->setState(Has_Credit);
-		return true;
+		if(money > cost)
+		{
+			((Poptart_Dispenser*)(CurrentContext))->itemDispensed = true;
+			cout << "Dispensing " << (((Poptart_Dispenser*)(CurrentContext))->DispensedItem)->description() << endl;
+			this->CurrentContext->setStateParam(Credit, money - cost);
+			this->CurrentContext->setStateParam(No_Of_Poptarts, numberOfPoptarts - 1);
+			this->CurrentContext->setState(Has_Credit);
+			return true;
+		}
+		else
+		{
+			this->CurrentContext->setState(Has_Credit);
+			return false;
+		}
+		
 	}
+	
+	/*
+	*	If we have poptarts and no money, we have to change the state of the machine
+	*	to promt the user to put more credit inside.
+	*/
+	
 	else if (numberOfPoptarts > 0 && money == 0)
 	{
 		this->CurrentContext->setStateParam(Credit, 0);
 		this->CurrentContext->setState(No_Credit);
 		return false;
 	}
+	
+	/*
+	*	If we have no poptarts and no money, we have to change the state of the machine
+	*	to promt the user that the machine is out of poptarts.
+	*/
+	
 	else if (numberOfPoptarts == 0)
 	{
 		this->CurrentContext->setStateParam(No_Of_Poptarts, 0);
@@ -690,7 +727,10 @@ bool DispensesPoptart::dispense()
 }
 
 #pragma endregion PoptartStates-Implementation
-
+/*
+*	Intialization of the Poptart Dispenser both contruction and destruction, 
+*	plus all the states being refrenced in the private poptart state
+*/
 #pragma region PoptartDispenser-Implementation
 Poptart_Dispenser::Poptart_Dispenser(int inventory_count)
 {
@@ -747,7 +787,7 @@ bool Poptart_Dispenser::dispense()
 	currentPoptartState = (PoptartState*)this->CurrentState;
 	return this->currentPoptartState->dispense();
 }
-
+ //Getting the product only if it has gone through inspection for dispension
 Product* Poptart_Dispenser::getProduct()
 {
 	if (this->itemDispensed)
