@@ -149,7 +149,7 @@ class PlainBase : public Base
 public:
 	PlainBase()
 	{
-		this->itemCost = 50;
+		this->itemCost = 100;
 		this->product_description = "Plain base";
 	}
 };
@@ -159,7 +159,7 @@ class SpicyBase : public Base
 public:
 	SpicyBase()
 	{
-		this->itemCost = 50;
+		this->itemCost = 150;
 		this->product_description = "Spicy base";
 	}
 };
@@ -169,7 +169,7 @@ class ChocolateBase : public Base
 public:
 	ChocolateBase()
 	{
-		this->itemCost = 50;
+		this->itemCost = 200;
 		this->product_description = "Chocolate base";
 	}
 };
@@ -179,7 +179,7 @@ class CoconutBase : public Base
 public:
 	CoconutBase()
 	{
-		this->itemCost = 50;
+		this->itemCost = 200;
 		this->product_description = "Coconut base";
 	}
 };
@@ -189,7 +189,7 @@ class FruityBase : public Base
 public:
 	FruityBase()
 	{
-		this->itemCost = 50;
+		this->itemCost = 200;
 		this->product_description = "Fruity base";
 	}
 };
