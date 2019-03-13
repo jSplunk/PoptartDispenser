@@ -2,25 +2,19 @@
 #include <iostream>
 #include <string>
 
-/*
-*
-*	Work in progress, not working so far
-*
-*/
-
 using namespace std;
 
 //Enumerations used for state and state context tracking. Also used for opt-codes for bases and fillings in the Poptart_Dispenser makeSelection function
 
 enum state { Out_Of_Poptarts, No_Credit, Has_Credit, Dispenses_Poptart };
 enum stateParameter { No_Of_Poptarts, Credit, Cost_Of_Poptart };
-enum bases { Plain = 1, Spicy = 2, Chocolate = 4, Coconut = 8, Fruity = 16 };
+enum bases { Plain = 0x00001, Spicy = 0x00002, Chocolate = 0x00004, Coconut = 0x00008, Fruity = 0x00010 };
 enum fillings
 {
-	F_Chocolate = 32, F_Banana = 64, F_Strawberry = 128,
-	F_Raspberry = 256, F_Apple = 512, F_Blackberry = 1024,
-	F_Maple = 2048, F_Marshmellow = 4096, F_Cheese = 8192,
-	F_CheeseAndHam = 16384, F_Caramel = 32768, F_Vanilla = 65536
+	F_Chocolate = 0x00020, F_Banana = 0x00040, F_Strawberry = 0x00080,
+	F_Raspberry = 0x00100, F_Apple = 0x00200, F_Blackberry = 0x00400,
+	F_Maple = 0x00800, F_Marshmellow = 0x01000, F_Cheese = 0x02000,
+	F_CheeseAndHam = 0x04000, F_Caramel = 0x08000, F_Vanilla = 0x10000
 };
 
 //Using an abstract State Machine, which allows for the current bidirectional composite relationship between State and StateContext
@@ -92,20 +86,20 @@ class Transition
 {
 public:
 
-	virtual bool insertMoney(int) { cout << "Error!" << endl; return false; }
-	virtual bool makeSelection(int) { cout << "Error!" << endl; return false; }
+	virtual bool insertMoney(int) { cout << "Error!" << endl; return false; } //Default option for the insertMoney function, in the Transistion interface
+	virtual bool makeSelection(int) { cout << "Error!" << endl; return false; } //Default option for the makeSelection function, in the Transistion interface
 
-	virtual bool moneyRejected(void) { cout << "Error!" << endl; return false; }
+	virtual bool moneyRejected(void) { cout << "Error!" << endl; return false; } //Default option for the moneyRejected function, in the Transistion interface
 
-	virtual bool addPoptart(int) { cout << "Error!" << endl; return false; }
+	virtual bool addPoptart(int) { cout << "Error!" << endl; return false; } //Default option for the addPoptart function, in the Transistion interface
 
-	virtual bool dispense(void) { cout << "Error!" << endl; return false; }
+	virtual bool dispense(void) { cout << "Error!" << endl; return false; } //Default option for the dispense function, in the Transistion interface
 
 };
 #pragma endregion Transition-Declaration
 
 /*
-*	Product will act as an interface for bases and filling for the different Poptarts,
+*	Product will act as an polymorphic interface for bases and filling for the different Poptarts,
 *	and treating the product system as non-modifyable code we can apply the Decorator pattern to
 *	the existing interface to add-on new bases or fillings
 */
@@ -114,24 +108,26 @@ public:
 class Product
 {
 protected:
-	string product_description;
-	int itemCost = 0;
+	string product_description; //Description to describe what the product is
+	int itemCost = 0; //Net-cost of the product
 public:
 	virtual void consume(void)
 	{
 
 	}
+
+	//Polymorphic getters for the product's attributes
 	virtual int cost(void) { return this->itemCost; }
 	virtual string description(void) { return product_description; }
 	virtual Product* ReturnHighestCostItem(void)
 	{
-		return nullptr;
+		return nullptr; //No need for implementation in the Product interface, since it will be implemented in the Base and Filling classes
 	}
 };
 
 #pragma endregion Product-Declaration
 
-//Base will inherit from product and will act as an interface for all bases furthur created
+//Base inherits from product and will act as an interface for all bases furthur created, while using the Decorator pattern
 
 #pragma region Base-Declaration
 class Base : public Product
@@ -142,7 +138,7 @@ public:
 	void consume();
 	Product* ReturnHighestCostItem(void)
 	{
-		return this;
+		return this; //There is only one base, so we can return a 'this' poniter from the Base class
 	}
 };
 
@@ -199,13 +195,13 @@ public:
 };
 #pragma endregion Base-Declaration
 
-//Filling acts as an interface for furthur created filling, adding onto existing base product
+//Filling acts as an interface for furthur created filling, adding onto existing base product while using the Decorator pattern
 
 #pragma region Filling-Declaration
 class Filling : public Product
 {
-protected:
-	Product* base;
+private:
+	Product* base; //Storing a product pointer so we can use fillProduct, and attach a base to the filling
 public:
 	virtual void fillProduct(Product* NewBase);
 	virtual int cost(void);
@@ -213,7 +209,8 @@ public:
 	void consume();
 	Product* ReturnHighestCostItem(void)
 	{
-		return this->itemCost > base->ReturnHighestCostItem()->cost() ? this : base->ReturnHighestCostItem();
+		// Comparing the cost of the current filling compared to the base cost, and returns the highest valued product
+		return this->itemCost > base->ReturnHighestCostItem()->cost() ? this : base->ReturnHighestCostItem(); 
 	}
 };
 
@@ -343,15 +340,26 @@ public:
 #pragma endregion Filling-Declaration
 
 
-
+/*
+*
+*	The Poptart Dispenser is using different states to determine it's current state in the Poptart Dispenser.
+*	The diffrent states have thier own implementations of the transition states, and will act differently
+*	depending on which state the Poptart Dispenser is in.
+*
+*
+*	The context has to be continously passed through for it to utilizing all the properties of that class
+*/
 #pragma region PoptartStates-Declaration
+
+// The poptart state interface, used by the diffrent state classes in the Poptart Dispenser
 class PoptartState : public State, public Transition
 {
 public:
 	PoptartState(StateContext* context) : State(context)
 	{}
 };
-
+ 
+//Different poptart state classes declarations
 class OutOfPoptarts : public PoptartState
 {
 public:
@@ -370,9 +378,8 @@ public:
 
 class HasCredit : public PoptartState
 {
-protected:
-	Product* product = nullptr;
-	Filling* fill = nullptr;
+private:
+	Product* product = nullptr; //Used in the makeSelection function to assign the selection of the poptart
 public:
 	HasCredit(StateContext* context) : PoptartState(context)
 	{}
@@ -383,8 +390,6 @@ public:
 
 class DispensesPoptart : public PoptartState
 {
-protected:
-	Product* product = nullptr;
 public:
 	DispensesPoptart(StateContext* context) : PoptartState(context)
 	{}
@@ -392,18 +397,23 @@ public:
 };
 #pragma endregion PoptartStates-Declaration
 
-
+/*
+*
+*	Poptart dispenser is the class that will encapsulate all the states and act as the public interface
+*	towards the main function.
+*
+*/
 #pragma region PoptartDispenser-Declaration
 class Poptart_Dispenser : public StateContext, public Transition
 {
+	//Using friend classes to be able to access the private product pointer and the private itemDispensed boolean, for assignment in those classes
 	friend class HasCredit;
 	friend class DispensesPoptart;
 private:
+	PoptartState* currentPoptartState = nullptr;
 	Product* DispensedItem = nullptr;
 	bool itemDispensed = false;
 	bool itemRetrived = false;
-	PoptartState* currentPoptartState = nullptr;
-	//bool itemDispensed = false;
 public:
 	Poptart_Dispenser(int inventory_count);
 
@@ -427,6 +437,7 @@ public:
 };
 #pragma endregion PoptartDispenser-Declaration
 
+//Base class implementations, getters and the consume function (which can be used for consuming the product).
 #pragma region Base-Implementation
 int Base::cost(void)
 {
@@ -440,10 +451,12 @@ string Base::description(void)
 
 void Base::consume()
 {
-	cout << "Consuming " << product_description << endl;
+	cout << "Consuming " << description() << endl;
 }
 #pragma endregion Base-Implementation
 
+
+//Filling class implementations for supplying a new base to the filling, getters for cost and description and consumtion of the product
 #pragma region Filling-Implementation
 void Filling::fillProduct(Product* NewBase)
 {
@@ -467,10 +480,12 @@ void Filling::consume()
 #pragma endregion Filling-Implementation
 
 
+//The out of poptart state class implementation for money rejected, adding poptarts and inserting money
 #pragma region PoptartStates-Implementation
 bool OutOfPoptarts::moneyRejected(void)
 {
 	cout << "Ejecting!" << endl;
+	this->CurrentContext->setStateParam(Credit, 0);
 	this->CurrentContext->setState(Out_Of_Poptarts);
 	return true;
 }
@@ -555,118 +570,91 @@ bool HasCredit::makeSelection(int option)
 
 	cout << "Selected " << ((Base*)(product))->description() << endl;
 
+	Product* tmpFill = nullptr;
+
 	while (option)
 	{
 		if ((option & F_Chocolate) == F_Chocolate)
 		{
-			fill = new ChocolateFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
+			tmpFill = new ChocolateFilling;
 			baseOption &= ~option;
 			option -= F_Chocolate;
 		}
 		else if ((option & F_Banana) == F_Banana)
 		{
-			fill = new BananaFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
+			tmpFill = new BananaFilling;
 			baseOption &= ~option;
 			option -= F_Banana;
 		}
 		else if ((option & F_Strawberry) == F_Strawberry)
 		{
-			fill = new StrawberryFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
+			tmpFill = new StrawberryFilling;
 			baseOption &= ~option;
 			option -= F_Strawberry;
 		}
 		else if ((option & F_Raspberry) == F_Raspberry)
 		{
-			fill = new RaspberryFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
+			tmpFill = new RaspberryFilling;
 			baseOption &= ~option;
 			option -= F_Raspberry;
 		}
 		else if ((option & F_Apple) == F_Apple)
 		{
-			fill = new AppleFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
+			tmpFill = new AppleFilling;
 			baseOption &= ~option;
 			option -= F_Apple;
 		}
 		else if ((option & F_Blackberry) == F_Blackberry)
 		{
-			fill = new BlackberryFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
+			tmpFill = new BlackberryFilling;
 			baseOption &= ~option;
 			option -= F_Blackberry;
 		}
 		else if ((option & F_Maple) == F_Maple)
 		{
-			fill = new MapleFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
+			tmpFill = new MapleFilling;
 			baseOption &= ~option;
 			option -= F_Maple;
 		}
 		else if ((option & F_Marshmellow) == F_Marshmellow)
 		{
-			fill = new MarshmellowFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
+			tmpFill = new MarshmellowFilling;
 			baseOption &= ~option;
 			option -= F_Marshmellow;
 		}
 		else if ((option & F_Cheese) == F_Cheese)
 		{
-			fill = new CheeseFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
+			tmpFill = new CheeseFilling;
 			baseOption &= ~option;
 			option -= F_Cheese;
 		}
 		else if ((option & F_CheeseAndHam) == F_CheeseAndHam)
 		{
-			fill = new CheeseAndHamFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
+			tmpFill = new CheeseAndHamFilling;
 			baseOption &= ~option;
 			option -= F_CheeseAndHam;
 		}
 		else if ((option & F_Caramel) == F_Caramel)
 		{
-			fill = new CaramelFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
+			tmpFill = new CaramelFilling;
 			baseOption &= ~option;
 			option -= F_Caramel;
 		}
 		else if ((option & F_Vanilla) == F_Vanilla)
 		{
-			fill = new VanillaFilling();
-			fill->fillProduct(product);
-			product = fill;
-			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
+			tmpFill = new VanillaFilling;
 			baseOption &= ~option;
 			option -= F_Vanilla;
 		}
+
+		if (tmpFill != nullptr)
+		{
+			((Filling*)(tmpFill))->fillProduct(product);
+			product = tmpFill;
+			this->CurrentContext->setStateParam(Cost_Of_Poptart, product->cost());
+		}
 	}
-	if (fill != nullptr) cout << "Selected " << ((Filling*)(product))->description() << endl;
+	if (product != nullptr) cout << "Selected " << ((Filling*)(product))->description() << endl;
 	((Poptart_Dispenser*)(CurrentContext))->DispensedItem = product;
 	this->CurrentContext->setState(Dispenses_Poptart);
 	return true;
@@ -793,7 +781,6 @@ void main()
 
 	pop.insertMoney(200);
 	pop.insertMoney(200);
-
 
 	pop.makeSelection(F_Chocolate + F_Cheese + F_Apple + F_Banana + Fruity);
 
